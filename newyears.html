@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy New Year Celebration</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            /* พื้นหลังมืดเพื่อให้พลุเด่น */
+            background: #000; 
+            font-family: 'Sarabun', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        /* ปุ่มเริ่มต้น */
+        #intro-screen {
+            z-index: 10;
+            text-align: center;
+            transition: opacity 0.8s ease;
+        }
+
+        button.start-btn {
+            padding: 25px 50px;
+            font-size: 26px;
+            border: none;
+            border-radius: 50px;
+            /* เปลี่ยนสีปุ่มให้เข้ากับธีมหลายสี */
+            background: linear-gradient(45deg, #ff00cc, #3333ff);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(255, 0, 204, 0.8);
+            animation: pulse 1.5s infinite;
+            font-weight: bold;
+            font-family: 'Sarabun', sans-serif;
+        }
+        button.start-btn:hover { transform: scale(1.1); }
+
+        /* Canvas พลุ */
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* พื้นที่ลอยหัวใจ */
+        #heart-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        /* ส่วนเกม */
+        #game-container {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            text-align: center;
+        }
+        .game-instruction {
+            margin-top: 60px;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #fff;
+            pointer-events: none;
+        }
+        .gift-box {
+            position: absolute;
+            font-size: 60px;
+            cursor: pointer;
+            filter: drop-shadow(0 0 15px white);
+            animation: floatGift 2s ease-in-out infinite alternate;
+        }
+        .gift-box:active { transform: scale(0.9); }
+
+        /* การ์ดอวยพร */
+        #greeting-card {
+            display: none;
+            position: absolute;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 50px;
+            border-radius: 25px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.2);
+            max-width: 80%;
+            animation: zoomIn 0.8s ease-out;
+        }
+        h1.wish-header {
+            font-size: 3.5em;
+            color: #fff;
+            text-shadow: 0 0 20px #ff00de;
+            margin-bottom: 20px;
+        }
+        p.wish-text {
+            font-size: 1.3em;
+            line-height: 1.8;
+            color: #e0e0e0;
+        }
+
+        /* อนิเมชั่นหัวใจลอย */
+        .floating-heart {
+            position: absolute;
+            bottom: -50px;
+            font-size: 24px;
+            animation: floatUp linear forwards;
+            opacity: 0.8;
+        }
+
+        /* Keyframes */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 204, 0.7); }
+            70% { box-shadow: 0 0 0 30px rgba(255, 0, 204, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 204, 0); }
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            10% { opacity: 0.8; }
+            100% { transform: translateY(-110vh) scale(1) rotate(360deg); opacity: 0; }
+        }
+        @keyframes floatGift {
+            from { transform: translateY(0); }
+            to { transform: translateY(-30px); }
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="newyears.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="intro-screen">
+        <button class="start-btn" onclick="startShow()">🎆 กดเพื่อชมพลุปีใหม่ 🎆</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    
+    <div id="heart-container"></div>
+
+    <div id="game-container">
+        <div class="game-instruction">จิ้มกล่องของขวัญให้ครบ 5 กล่อง!<br><span id="score">0</span> / 5</div>
+    </div>
+
+    <div id="greeting-card">
+        <h1 class="wish-header">สุขสันต์วันปีใหม่นะ</h1>
+        <p class="wish-text">
+            ขอให้ปีนี้เป็นปีที่สบายใจกว่าปีที่ผ่านมา เรื่องไหนเหนื่อยก็ขอให้มันเบาลง เรื่องไหนหวังก็ขอให้ได้อย่างที่ตั้งใจ<br>
+            ขอให้มีความสุขกับชีวิตในแบบของตัวเอง สุขภาพดี เงินไม่ขาด มือจับอะไรก็เป็นไปในทางที่ดี<br>
+            ขอให้ปีนี้ใจดีกับทุกคนนะ😊<br>
+        </p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        
+        // เก็บข้อมูลจรวดที่กำลังวิ่งขึ้น
+        let rockets = [];
+        // เก็บข้อมูลเม็ดพลุที่ระเบิดแล้ว
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // ฟังก์ชันสุ่มสีสดๆ (HSL)
+        function getRandomColor() {
+            const hue = Math.floor(Math.random() * 360);
+            // Saturation 100%, Lightness 60% เพื่อให้สีสดและสว่าง
+            return `hsl(${hue}, 100%, 60%)`;
+        }
+
+        // --- คลาสจรวด (Rocket) ยิงจากล่างขึ้นบน ---
+        class Rocket {
+            constructor() {
+                this.x = Math.random() * width; // ตำแหน่งแนวนอนสุ่ม
+                this.y = height; // เริ่มที่ขอบล่างเสมอ
+                this.targetY = Math.random() * (height / 2); // จุดที่จะระเบิด (ครึ่งบนของจอ)
+                this.color = getRandomColor(); // สุ่มสีให้จรวดลูกนี้
+                this.speed = Math.random() * 15 + 10; // ความเร็วในการพุ่งขึ้น
+                this.thickness = Math.random() * 3 + 2;
+            }
+
+            update() {
+                this.y -= this.speed; // ขยับขึ้นไปเรื่อยๆ
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = this.color;
+                // วาดเป็นเส้นยาวๆ เหมือนหางพลุ
+                ctx.fillRect(this.x, this.y, this.thickness, this.speed * 1.5);
+                // เพิ่มแสงที่หัว
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x + this.thickness/2, this.y, this.thickness + 2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- คลาสเม็ดพลุระเบิด (Particle) ---
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 10 + 5; // แรงระเบิด
+                this.vx = Math.cos(angle) * velocity;
+                this.vy = Math.sin(angle) * velocity;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.01; // จางเร็วแค่ไหน
+                this.gravity = 0.2;
+                this.size = Math.random() * 4 + 2;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity; // โดนแรงโน้มถ่วงดึงลง
+                this.vx *= 0.98; // แรงต้านอากาศแนวนอน
+                this.vy *= 0.98; // แรงต้านอากาศแนวตั้ง
+                this.alpha -= this.decay; // ค่อยๆ จาง
+            }
+        }
+
+        // ฟังก์ชันสร้างแรงระเบิด ณ จุดที่กำหนด
+        function explode(x, y, color) {
+            const particleCount = 100; // จำนวนเม็ดพลุต่อการระเบิด 1 ครั้ง
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        // ลูปอนิเมชั่นหลัก
+        function animate() {
+            // ทำให้เกิดหางพลุจางๆ (Trail Effect) โดยการถมสีดำโปร่งแสงทับ
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            // 1. อัพเดตและวาดจรวด
+            for (let i = rockets.length - 1; i >= 0; i--) {
+                rockets[i].update();
+                rockets[i].draw();
+
+                // ถ้าจรวดวิ่งถึงจุดเป้าหมาย หรือวิ่งเลยจอไป
+                if (rockets[i].y <= rockets[i].targetY) {
+                    // สั่งระเบิด! โดยใช้สีเดียวกับจรวด
+                    explode(rockets[i].x, rockets[i].y, rockets[i].color);
+                    // ลบจรวดทิ้ง
+                    rockets.splice(i, 1);
+                }
+            }
+
+            // 2. อัพเดตและวาดเม็ดพลุที่ระเบิดแล้ว
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                // ถ้าจางหมดแล้วให้ลบทิ้ง
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        // --- ส่วนของหัวใจลอย (เหมือนเดิม) ---
+        function spawnFloatingHeart() {
+            const container = document.getElementById('heart-container');
+            const heart = document.createElement('div');
+            heart.classList.add('floating-heart');
+            heart.innerText = '💗';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.fontSize = (Math.random() * 15 + 10) + 'px';
+            heart.style.animationDuration = (Math.random() * 3 + 5) + 's';
+            container.appendChild(heart);
+            setTimeout(() => { heart.remove(); }, 8000);
+        }
+
+        // --- ระบบควบคุมหลัก ---
+        let rocketLauncherInt, heartInterval;
+        let score = 0;
+        const targetScore = 5;
+
+        function startShow() {
+            const music = document.getElementById('bg-music');
+            music.volume = 0.6;
+            music.play().catch(() => {});
+
+            document.getElementById('intro-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('intro-screen').style.display = 'none';
+                
+                // เริ่ม Loop อนิเมชั่น
+                animate();
+                
+                // ตั้งเวลายิงจรวดขึ้นฟ้าทุกๆ 400ms
+                rocketLauncherInt = setInterval(() => {
+                    rockets.push(new Rocket());
+                }, 400);
+
+                // ปล่อยหัวใจลอย
+                heartInterval = setInterval(spawnFloatingHeart, 400);
+
+                // เริ่มเกมหลังผ่านไป 4 วินาที
+                setTimeout(startGame, 4000);
+            }, 800);
+        }
+
+        function startGame() {
+            document.getElementById('game-container').style.display = 'block';
+            
+            const spawnGift = setInterval(() => {
+                if (score >= targetScore) {
+                    clearInterval(spawnGift);
+                    endGame();
+                    return;
+                }
+                
+                const gift = document.createElement('div');
+                gift.classList.add('gift-box');
+                gift.innerHTML = '🎁';
+                // สุ่มตำแหน่งไม่ให้ชิดขอบเกินไป
+                gift.style.left = Math.random() * (width - 100) + 50 + 'px';
+                gift.style.top = Math.random() * (height/2) + (height/4) + 'px';
+                
+                gift.onclick = (e) => {
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    // เวลากดโดน ให้ระเบิดพลุสีทองตรงนั้น
+                    explode(e.clientX, e.clientY, '#FFD700');
+                    gift.remove();
+
+                    if(score === targetScore) {
+                         clearInterval(spawnGift);
+                         setTimeout(endGame, 1000);
+                    }
+                };
+                
+                document.getElementById('game-container').appendChild(gift);
+            }, 1000);
+        }
+
+        function endGame() {
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('greeting-card').style.display = 'block';
+            
+            // หยุดยิงจรวดรัวๆ
+            clearInterval(rocketLauncherInt);
+            // ยิงจรวดฉลองนานๆ ที
+            setInterval(() => {
+                rockets.push(new Rocket());
+            }, 1200);
+        }
+    </script>
+</body>
+</html>
